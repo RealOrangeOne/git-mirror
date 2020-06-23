@@ -131,11 +131,11 @@ def main():
     config.clone_root.mkdir(exist_ok=True)
 
     active_repo_dirs = {repo.directory_name for repo in config.repositories}
-    all_repo_dirs = {d.name for d in config.clone_root.iterdir() if d.is_dir()}
-    defunct_repo_dirs = all_repo_dirs - active_repo_dirs
-    for defunct_repo_dir in defunct_repo_dirs:
-        logging.warn("Cleaning up %s", defunct_repo_dir)
-        shutil.rmtree(config.clone_root / defunct_repo_dir)
+
+    for repo_dir in config.clone_root.iterdir():
+        if repo_dir.is_dir() and repo_dir.name not in active_repo_dirs:
+            logging.warn("Cleaning up %s", repo_dir)
+            shutil.rmtree(config.clone_root / repo_dir)
 
     scheduler = create_scheduler(config)
     atexit.register(scheduler.shutdown)
