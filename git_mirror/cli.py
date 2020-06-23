@@ -3,10 +3,14 @@ import hashlib
 import os
 import shutil
 import subprocess
+from functools import partial
 from pathlib import Path
 from typing import List
 
 import toml
+from apscheduler.executors.pool import ThreadPoolExecutor
+from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
@@ -15,6 +19,7 @@ from pydantic.dataclasses import dataclass
 class Repo:
     source: str
     destination: str
+    interval: int = 15
 
     @property
     def directory_name(self) -> str:
@@ -32,6 +37,11 @@ class Repo:
     @property
     def expanded_destination(self):
         return os.path.expandvars(self.destination)
+
+    def do_update(self, config: "Config"):
+        get_repo(config, self)
+        push_repo(config, self)
+        git_gc(config.directory_for_repo(self))
 
 
 @dataclass
@@ -79,15 +89,24 @@ def git_gc(directory: Path):
     git(["gc", "--auto", "--quiet"], cwd=directory)
 
 
+def create_scheduler(config: Config):
+    scheduler = BlockingScheduler(executors={"default": ThreadPoolExecutor()})
+    for repo in config.repos:
+        scheduler.add_job(
+            partial(repo.do_update, config), "interval", minutes=repo.interval
+        )
+
+    # Make sure jobs also execute at startup
+    for job in scheduler.get_jobs():
+        if isinstance(job.trigger, IntervalTrigger):
+            scheduler.add_job(job.func)
+
+    return scheduler
+
+
 def main():
     config = Config.from_file(Path() / "repos.toml")
     config.clone_root.mkdir(exist_ok=True)
-    for repo in config.repos:
-        print("Updating", repo.display())
-        repo_dir = config.clone_root / repo.directory_name
-        get_repo(config, repo)
-        push_repo(config, repo)
-        git_gc(repo_dir)
 
     active_repo_dirs = {repo.directory_name for repo in config.repos}
     all_repos = {d.name for d in config.clone_root.iterdir() if d.is_dir()}
@@ -95,6 +114,8 @@ def main():
     for defunct_repo in defunct_repos:
         print("Cleaning up", defunct_repo)
         shutil.rmtree(config.clone_root / defunct_repo)
+
+    create_scheduler(config).start()
 
 
 if __name__ == "__main__":
