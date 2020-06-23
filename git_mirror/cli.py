@@ -13,17 +13,24 @@ import toml
 class Repo:
     source: str
     destination: str
+    raw_source: str
+    raw_destination: str
 
     @classmethod
     def from_config(cls, config: dict):
         return cls(
             source=os.path.expandvars(config["source"]),
             destination=os.path.expandvars(config["destination"]),
+            raw_source=config["source"],
+            raw_destination=config["destination"],
         )
 
     @property
     def directory_name(self) -> str:
         return hashlib.sha1((self.source + self.destination).encode()).hexdigest()
+
+    def display(self) -> str:
+        return f"{self.raw_source} -> {self.raw_destination}"
 
 
 def get_repos():
@@ -38,7 +45,6 @@ def get_repos():
 
 def git(*command: str, cwd=None) -> str:
     git_command = ["git", *command]
-    print("Running", git_command, "for", cwd)
     return subprocess.check_output(git_command, cwd=cwd or Path(),).decode()
 
 
@@ -61,9 +67,9 @@ def git_gc(directory: Path):
 def main():
     repos_dir = Path().resolve() / "repos"
     repos = get_repos()
-    print(f"Found {len(repos)} repos")
     repos_dir.mkdir(exist_ok=True)
     for repo in repos:
+        print("Updating", repo.display())
         repo_dir = repos_dir / repo.directory_name
         get_repo(repo, repo_dir)
         push_repo(repo, repo_dir)
