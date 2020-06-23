@@ -3,15 +3,16 @@ import hashlib
 import os
 import shutil
 import subprocess
+import urllib.request
 from functools import partial
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import toml
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from pydantic import Field
+from pydantic import Field, HttpUrl
 from pydantic.dataclasses import dataclass
 
 
@@ -48,6 +49,7 @@ class Repo:
 class Config:
     repo: List[Repo] = Field(default_factory=list)
     clone_root: Path = Path(__file__).resolve().parent / "repos"
+    heartbeat: Optional[HttpUrl] = None
 
     @classmethod
     def from_file(cls, file: Path) -> "Config":
@@ -62,6 +64,11 @@ class Config:
 
     def directory_for_repo(self, repo: Repo) -> Path:
         return self.clone_root / repo.directory_name
+
+    def send_heartbeat(self):
+        if self.heartbeat:
+            with urllib.request.urlopen(str(self.heartbeat)) as response:
+                response.read()
 
 
 def git(command: List[str], cwd: Path) -> str:
@@ -95,6 +102,9 @@ def create_scheduler(config: Config):
         scheduler.add_job(
             partial(repo.do_update, config), "interval", minutes=repo.interval
         )
+
+    if config.heartbeat:
+        scheduler.add_job(config.send_heartbeat)
 
     # Make sure jobs also execute at startup
     for job in scheduler.get_jobs():
