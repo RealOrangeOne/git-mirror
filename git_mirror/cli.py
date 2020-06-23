@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import hashlib
 import os
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,13 +35,33 @@ def get_repos():
     return repos
 
 
+def git(*command: str, cwd=None) -> str:
+    git_command = ["git", *command]
+    print("Running", git_command, "for", cwd)
+    return subprocess.check_output(git_command, cwd=cwd or Path(),).decode()
+
+
+def get_repo(repo: Repo, directory: Path):
+    if directory.exists():
+        git("fetch", "--quiet", cwd=directory)
+    else:
+        git("clone", "--quiet", "--bare", repo.source, str(directory))
+
+
+def push_repo(repo: Repo, directory: Path):
+    assert directory.exists()
+    git("push", "--mirror", "--quiet", repo.destination, cwd=directory)
+
+
 def main():
-    repos_dir = Path() / "repos"
+    repos_dir = Path().resolve() / "repos"
     repos = get_repos()
     print(f"Found {len(repos)} repos")
-    repos_dir.mkdir()
+    repos_dir.mkdir(exist_ok=True)
     for repo in repos:
-        print(repos_dir / repo.directory_name)
+        repo_dir = repos_dir / repo.directory_name
+        get_repo(repo, repo_dir)
+        push_repo(repo, repo_dir)
 
 
 if __name__ == "__main__":
