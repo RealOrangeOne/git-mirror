@@ -15,12 +15,10 @@ import toml
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from pydantic import Field, HttpUrl
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel, HttpUrl, ValidationError
 
 
-@dataclass
-class Repository:
+class Repository(BaseModel):
     source: str
     destination: str
     interval: int = 15
@@ -48,15 +46,18 @@ class Repository:
         git_gc(config.directory_for_repository(self))
 
 
-@dataclass
-class Config:
-    repository: List[Repository] = Field(default_factory=list)
+class Config(BaseModel):
+    repository: List[Repository]
     clone_root: Path = Path(__file__).resolve().parent / "repos"
     heartbeat: Optional[HttpUrl] = None
 
     @classmethod
     def from_file(cls, file: Path) -> "Config":
-        return cls(**toml.loads(file.read_text()))
+        try:
+            return cls.parse_obj(toml.loads(file.read_text()))
+        except ValidationError as e:
+            logging.error("%s", e)
+            exit(1)
 
     @property
     def repositories(self) -> List[Repository]:
