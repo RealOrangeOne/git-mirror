@@ -108,9 +108,12 @@ def create_scheduler(config: Config):
             minutes=repo.interval,
             name=repo.display(),
         )
-
     if config.heartbeat:
-        scheduler.add_job(config.send_heartbeat)
+        scheduler.add_job(
+            config.send_heartbeat,
+            "interval",
+            minutes=min(repo.interval for repo in config.repos),
+        )
 
     # Make sure jobs also execute at startup
     for job in scheduler.get_jobs():
