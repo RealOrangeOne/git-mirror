@@ -3,34 +3,31 @@ import hashlib
 import os
 import shutil
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
 import toml
+from pydantic.dataclasses import dataclass
 
 
 @dataclass
 class Repo:
     source: str
     destination: str
-    raw_source: str
-    raw_destination: str
-
-    @classmethod
-    def from_config(cls, config: dict):
-        return cls(
-            source=os.path.expandvars(config["source"]),
-            destination=os.path.expandvars(config["destination"]),
-            raw_source=config["source"],
-            raw_destination=config["destination"],
-        )
 
     @property
     def directory_name(self) -> str:
         return hashlib.sha1((self.source + self.destination).encode()).hexdigest()
 
     def display(self) -> str:
-        return f"{self.raw_source} -> {self.raw_destination}"
+        return f"{self.source} -> {self.destination}"
+
+    @property
+    def expanded_source(self):
+        return os.path.expandvars(self.source)
+
+    @property
+    def expanded_destination(self):
+        return os.path.expandvars(self.destination)
 
 
 def get_repos():
@@ -39,7 +36,7 @@ def get_repos():
 
     repos = []
     for repo_config in config.get("repo", []):
-        repos.append(Repo.from_config(repo_config))
+        repos.append(Repo(**repo_config))
     return repos
 
 
@@ -52,12 +49,12 @@ def get_repo(repo: Repo, directory: Path):
     if directory.exists():
         git("fetch", "--quiet", cwd=directory)
     else:
-        git("clone", "--quiet", "--bare", repo.source, str(directory))
+        git("clone", "--quiet", "--bare", repo.expanded_source, str(directory))
 
 
 def push_repo(repo: Repo, directory: Path):
     assert directory.exists()
-    git("push", "--mirror", "--quiet", repo.destination, cwd=directory)
+    git("push", "--mirror", "--quiet", repo.expanded_destination, cwd=directory)
 
 
 def git_gc(directory: Path):
