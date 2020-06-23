@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import atexit
 import hashlib
 import logging
 import os
@@ -133,7 +134,9 @@ def main():
         logging.warn("Cleaning up %s", defunct_repo)
         shutil.rmtree(config.clone_root / defunct_repo)
 
-    create_scheduler(config).start()
+    scheduler = create_scheduler(config)
+    atexit.register(scheduler.shutdown)
+    scheduler.start()
 
 
 if __name__ == "__main__":
