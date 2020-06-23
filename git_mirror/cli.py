@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import hashlib
+import logging
 import os
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ from functools import partial
 from pathlib import Path
 from typing import List, Optional
 
+import coloredlogs
 import toml
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -100,7 +102,10 @@ def create_scheduler(config: Config):
     scheduler = BlockingScheduler(executors={"default": ThreadPoolExecutor()})
     for repo in config.repos:
         scheduler.add_job(
-            partial(repo.do_update, config), "interval", minutes=repo.interval
+            partial(repo.do_update, config),
+            "interval",
+            minutes=repo.interval,
+            name=repo.display(),
         )
 
     if config.heartbeat:
@@ -109,12 +114,15 @@ def create_scheduler(config: Config):
     # Make sure jobs also execute at startup
     for job in scheduler.get_jobs():
         if isinstance(job.trigger, IntervalTrigger):
-            scheduler.add_job(job.func)
+            scheduler.add_job(job.func, name=job.name)
 
     return scheduler
 
 
 def main():
+    coloredlogs.install(
+        level=logging.INFO, fmt="%(asctime)s %(levelname)s %(message)s",
+    )
     config = Config.from_file(Path() / "repos.toml")
     config.clone_root.mkdir(exist_ok=True)
 
@@ -122,7 +130,7 @@ def main():
     all_repos = {d.name for d in config.clone_root.iterdir() if d.is_dir()}
     defunct_repos = all_repos - active_repo_dirs
     for defunct_repo in defunct_repos:
-        print("Cleaning up", defunct_repo)
+        logging.warn("Cleaning up %s", defunct_repo)
         shutil.rmtree(config.clone_root / defunct_repo)
 
     create_scheduler(config).start()
