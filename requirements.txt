@@ -1,3 +1,4 @@
 toml==0.10.1
 pydantic==1.5.1
 apscheduler==3.6.3
+coloredlogs==14.0
