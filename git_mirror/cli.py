@@ -20,7 +20,7 @@ from pydantic.dataclasses import dataclass
 
 
 @dataclass
-class Repo:
+class Repository:
     source: str
     destination: str
     interval: int = 15
@@ -45,12 +45,12 @@ class Repo:
     def do_update(self, config: "Config"):
         get_repo(config, self)
         push_repo(config, self)
-        git_gc(config.directory_for_repo(self))
+        git_gc(config.directory_for_repository(self))
 
 
 @dataclass
 class Config:
-    repo: List[Repo] = Field(default_factory=list)
+    repository: List[Repository] = Field(default_factory=list)
     clone_root: Path = Path(__file__).resolve().parent / "repos"
     heartbeat: Optional[HttpUrl] = None
 
@@ -59,14 +59,14 @@ class Config:
         return cls(**toml.loads(file.read_text()))
 
     @property
-    def repos(self) -> List[Repo]:
+    def repositories(self) -> List[Repository]:
         """
         Stupid TOML
         """
-        return self.repo
+        return self.repository
 
-    def directory_for_repo(self, repo: Repo) -> Path:
-        return self.clone_root / repo.directory_name
+    def directory_for_repository(self, repository: Repository) -> Path:
+        return self.clone_root / repository.directory_name
 
     def send_heartbeat(self):
         if self.heartbeat:
@@ -78,21 +78,21 @@ def git(command: List[str], cwd: Path) -> str:
     return subprocess.check_output(["git"] + command, cwd=cwd).decode()
 
 
-def get_repo(config: Config, repo: Repo):
-    directory = config.directory_for_repo(repo)
+def get_repo(config: Config, repository: Repository):
+    directory = config.directory_for_repository(repository)
     if directory.exists():
         git(["fetch", "--quiet"], cwd=directory)
     else:
         git(
-            ["clone", "--quiet", "--bare", repo.expanded_source, str(directory)],
+            ["clone", "--quiet", "--bare", repository.expanded_source, str(directory)],
             cwd=config.clone_root,
         )
 
 
-def push_repo(config: Config, repo: Repo):
-    directory = config.directory_for_repo(repo)
+def push_repo(config: Config, repository: Repository):
+    directory = config.directory_for_repository(repository)
     assert directory.exists()
-    git(["push", "--mirror", "--quiet", repo.expanded_destination], cwd=directory)
+    git(["push", "--mirror", "--quiet", repository.expanded_destination], cwd=directory)
 
 
 def git_gc(directory: Path):
@@ -101,18 +101,18 @@ def git_gc(directory: Path):
 
 def create_scheduler(config: Config):
     scheduler = BlockingScheduler(executors={"default": ThreadPoolExecutor()})
-    for repo in config.repos:
+    for repository in config.repositories:
         scheduler.add_job(
-            partial(repo.do_update, config),
+            partial(repository.do_update, config),
             "interval",
-            minutes=repo.interval,
-            name=repo.display(),
+            minutes=repository.interval,
+            name=repository.display(),
         )
     if config.heartbeat:
         scheduler.add_job(
             config.send_heartbeat,
             "interval",
-            minutes=min(repo.interval for repo in config.repos),
+            minutes=min(repository.interval for repository in config.repositories),
         )
 
     # Make sure jobs also execute at startup
@@ -130,12 +130,12 @@ def main():
     config = Config.from_file(Path() / "repos.toml")
     config.clone_root.mkdir(exist_ok=True)
 
-    active_repo_dirs = {repo.directory_name for repo in config.repos}
-    all_repos = {d.name for d in config.clone_root.iterdir() if d.is_dir()}
-    defunct_repos = all_repos - active_repo_dirs
-    for defunct_repo in defunct_repos:
-        logging.warn("Cleaning up %s", defunct_repo)
-        shutil.rmtree(config.clone_root / defunct_repo)
+    active_repo_dirs = {repo.directory_name for repo in config.repositories}
+    all_repo_dirs = {d.name for d in config.clone_root.iterdir() if d.is_dir()}
+    defunct_repo_dirs = all_repo_dirs - active_repo_dirs
+    for defunct_repo_dir in defunct_repo_dirs:
+        logging.warn("Cleaning up %s", defunct_repo_dir)
+        shutil.rmtree(config.clone_root / defunct_repo_dir)
 
     scheduler = create_scheduler(config)
     atexit.register(scheduler.shutdown)
