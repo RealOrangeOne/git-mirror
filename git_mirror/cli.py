@@ -53,6 +53,10 @@ def push_repo(repo: Repo, directory: Path):
     git("push", "--mirror", "--quiet", repo.destination, cwd=directory)
 
 
+def git_gc(directory: Path):
+    git("gc", "--auto", "--quiet", cwd=directory)
+
+
 def main():
     repos_dir = Path().resolve() / "repos"
     repos = get_repos()
@@ -62,6 +66,7 @@ def main():
         repo_dir = repos_dir / repo.directory_name
         get_repo(repo, repo_dir)
         push_repo(repo, repo_dir)
+        git_gc(repo_dir)
 
 
 if __name__ == "__main__":
