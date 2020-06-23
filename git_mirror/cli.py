@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import hashlib
 import os
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,7 +31,7 @@ def get_repos():
     config = toml.loads(config_file.read_text())
 
     repos = []
-    for repo_config in config["repo"]:
+    for repo_config in config.get("repo", []):
         repos.append(Repo.from_config(repo_config))
     return repos
 
@@ -67,6 +68,12 @@ def main():
         get_repo(repo, repo_dir)
         push_repo(repo, repo_dir)
         git_gc(repo_dir)
+    active_repo_dirs = {repo.directory_name for repo in repos}
+    all_repos = {d.name for d in repos_dir.iterdir() if d.is_dir()}
+    defunct_repos = all_repos - active_repo_dirs
+    for defunct_repo in defunct_repos:
+        print("Cleaning up", defunct_repo)
+        shutil.rmtree(repos_dir / defunct_repo)
 
 
 if __name__ == "__main__":
