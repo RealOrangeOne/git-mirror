@@ -10,13 +10,12 @@ from functools import partial
 from pathlib import Path
 from typing import List, Optional
 
+import coloredlogs
 import toml
 from apscheduler.executors.pool import ThreadPoolExecutor
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from pydantic import BaseModel, HttpUrl, ValidationError
-
-import coloredlogs
 
 
 class Repository(BaseModel):
