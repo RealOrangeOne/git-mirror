@@ -34,7 +34,7 @@ class Repository(BaseModel):
 
 class Config(BaseModel):
     repository: List[Repository]
-    clone_root: Path = Path(__file__).resolve().parent / "repos"
+    clone_root: Path = Path().resolve() / "repos"
     heartbeat: Optional[HttpUrl] = None
 
     @classmethod
