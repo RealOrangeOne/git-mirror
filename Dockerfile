@@ -1,5 +1,7 @@
 FROM python:3.8-alpine
 
+RUN apk --no-cache add git
+
 COPY requirements.txt /app/requirements.txt
 RUN pip install -r /app/requirements.txt
 
