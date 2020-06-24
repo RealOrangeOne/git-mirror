@@ -21,4 +21,5 @@ By default, repositories are updated every 15 minutes. This can be changed per r
 ### Additional settings
 
 `heartbeat`: A HTTP URL to poll to ensure the process is still running. The interval is the smallest interval of all the repositories. Works nicely with [healthchecks.io](https://healthchecks.io/).
+
 `clone_root`: Directory to store repositories in. Defaults to `$PWD/repositories/`.
