@@ -64,7 +64,7 @@ def main():
 
     if not all_repositories_exist:
         logging.error("Some repositories do not exist.")
-        exit(0)
+        exit(1)
 
     logging.info("All repositories exist!")
 
