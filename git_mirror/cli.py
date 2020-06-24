@@ -42,7 +42,7 @@ def main():
     coloredlogs.install(
         level=logging.INFO, fmt="%(asctime)s %(levelname)s %(message)s",
     )
-    config = Config.from_file(Path() / "repos.toml")
+    config = Config.from_file(Path() / "repositories.toml")
     config.clone_root.mkdir(exist_ok=True)
 
     active_repo_dirs = {repo.directory_name for repo in config.repositories}

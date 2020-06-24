@@ -109,5 +109,5 @@ dmypy.json
 
 # End of https://www.gitignore.io/api/python
 env/
-repos.toml
+repositories.toml
 repos/
