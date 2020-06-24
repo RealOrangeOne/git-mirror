@@ -38,7 +38,7 @@ def mirror_repository(repository: Repository, config: Config):
 
 def repository_exists(url: str) -> bool:
     try:
-        git(["ls-remote", "--quiet", url], cwd=Path())
+        git(["ls-remote", "--heads", "--quiet", url], cwd=Path())
         return True
     except subprocess.CalledProcessError:
         return False
