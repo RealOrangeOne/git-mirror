@@ -52,13 +52,13 @@ def main():
             logging.warn("Cleaning up %s", repo_dir)
             shutil.rmtree(config.clone_root / repo_dir)
 
-    logging.info("Checking repositories exist...")
     all_repositories_exist = True
     for repository in config.repositories:
         for repository_url in [
             repository.expanded_source,
             repository.expanded_destination,
         ]:
+            logging.info("Checking %s exists", repository_url)
             if not repository_exists(repository_url):
                 all_repositories_exist = False
 
