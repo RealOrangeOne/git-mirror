@@ -12,10 +12,16 @@ def git(command: List[str], cwd: Path) -> str:
 def get_repo(config: Config, repository: Repository):
     directory = config.directory_for_repository(repository)
     if directory.exists():
-        git(["fetch", "--quiet"], cwd=directory)
+        git(["fetch", "--quiet", "--prune"], cwd=directory)
     else:
         git(
-            ["clone", "--quiet", "--mirror", repository.expanded_source, str(directory)],
+            [
+                "clone",
+                "--quiet",
+                "--mirror",
+                repository.expanded_source,
+                str(directory),
+            ],
             cwd=Path(),
         )
 
@@ -23,7 +29,10 @@ def get_repo(config: Config, repository: Repository):
 def push_repo(config: Config, repository: Repository):
     directory = config.directory_for_repository(repository)
     assert directory.exists()
-    git(["push", "--mirror", "--quiet", repository.expanded_destination], cwd=directory)
+    git(
+        ["push", "--mirror", "--quiet", "--prune", repository.expanded_destination],
+        cwd=directory,
+    )
 
 
 def git_gc(directory: Path):
