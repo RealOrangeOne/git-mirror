@@ -15,7 +15,7 @@ def get_repo(config: Config, repository: Repository):
         git(["fetch", "--quiet"], cwd=directory)
     else:
         git(
-            ["clone", "--quiet", "--bare", repository.expanded_source, str(directory)],
+            ["clone", "--quiet", "--mirror", repository.expanded_source, str(directory)],
             cwd=Path(),
         )
 
