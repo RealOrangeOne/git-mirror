@@ -40,7 +40,8 @@ def create_scheduler(config: Config):
 
 def main():
     coloredlogs.install(
-        level=logging.INFO, fmt="%(asctime)s %(levelname)s %(message)s",
+        level=logging.INFO,
+        fmt="%(asctime)s %(levelname)s %(message)s",
     )
     config = Config.from_file(Path() / "repositories.toml")
     config.clone_root.mkdir(exist_ok=True)
