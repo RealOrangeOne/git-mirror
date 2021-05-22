@@ -16,6 +16,8 @@ Environment variables are automatically injected into the `source` and `destinat
 
 Now, simply run the script. For efficiency, these clones are stored so that only changes need to be cloned and pushed going forwards. `git gc` is automatically run to keep directory sizes down.
 
+To just run the mirror once, run using `--once`.
+
 ### Additional settings
 
 `heartbeat`: A HTTP URL to poll to ensure the process is still running. The interval is the smallest interval of all the repositories. Works nicely with [healthchecks.io](https://healthchecks.io/).

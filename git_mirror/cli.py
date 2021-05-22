@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import logging
 import shutil
 import time
@@ -8,6 +9,12 @@ import coloredlogs
 
 from .config import Config
 from .git import mirror_repository, repository_exists
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--once", action="store_true")
+    return parser.parse_args()
 
 
 def do_mirror(config: Config):
@@ -50,16 +57,22 @@ def main():
         level=logging.INFO,
         fmt="%(asctime)s %(levelname)s %(message)s",
     )
+
+    args = get_args()
+
     config = Config.from_file(Path() / "repositories.toml")
     config.clone_root.mkdir(exist_ok=True)
 
     prune_repositories(config)
     check_repositories(config)
 
-    while True:
+    if args.once:
         do_mirror(config)
-        logging.info("Waiting %ds", config.interval)
-        time.sleep(config.interval)
+    else:
+        while True:
+            do_mirror(config)
+            logging.info("Waiting %ds", config.interval)
+            time.sleep(config.interval)
 
 
 if __name__ == "__main__":
