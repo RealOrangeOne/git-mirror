@@ -14,7 +14,7 @@ def git(command: List[str], cwd: Path) -> str:
 def get_repo(config: Config, repository: Repository):
     directory = config.directory_for_repository(repository)
     if directory.exists():
-        git(["fetch", "--quiet", "--prune"], cwd=directory)
+        git(["fetch", "--quiet", "--prune", "--prune-tags"], cwd=directory)
     else:
         git(
             [
