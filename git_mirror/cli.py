@@ -1,41 +1,23 @@
 #!/usr/bin/env python3
-import atexit
 import logging
 import shutil
-from functools import partial
+import time
 from pathlib import Path
 
 import coloredlogs
-from apscheduler.executors.pool import ThreadPoolExecutor
-from apscheduler.schedulers.blocking import BlockingScheduler
-from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import Config
 from .git import mirror_repository, repository_exists
 
 
-def create_scheduler(config: Config):
-    scheduler = BlockingScheduler(executors={"default": ThreadPoolExecutor()})
+def do_mirror(config: Config):
     for repository in config.repositories:
-        scheduler.add_job(
-            partial(mirror_repository, repository, config),
-            "interval",
-            minutes=repository.interval,
-            name=repository.display(),
-        )
+        logging.info("Mirroring %s", repository.display())
+        mirror_repository(repository, config)
+
     if config.heartbeat:
-        scheduler.add_job(
-            config.send_heartbeat,
-            "interval",
-            minutes=min(repository.interval for repository in config.repositories),
-        )
-
-    # Make sure jobs also execute at startup
-    for job in scheduler.get_jobs():
-        if isinstance(job.trigger, IntervalTrigger):
-            scheduler.add_job(job.func, name=job.name)
-
-    return scheduler
+        logging.info("Sending heartbeat")
+        config.send_heartbeat()
 
 
 def main():
@@ -69,9 +51,10 @@ def main():
 
     logging.info("All repositories exist!")
 
-    scheduler = create_scheduler(config)
-    atexit.register(scheduler.shutdown)
-    scheduler.start()
+    while True:
+        do_mirror(config)
+        logging.info("Waiting %ds", config.interval)
+        time.sleep(config.interval)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,6 @@ from pydantic import BaseModel, HttpUrl, ValidationError
 class Repository(BaseModel):
     source: str
     destination: str
-    interval: int = 15
 
     @property
     def directory_name(self) -> str:
@@ -36,6 +35,7 @@ class Config(BaseModel):
     repository: List[Repository]
     clone_root: Path = Path().resolve() / "repos"
     heartbeat: Optional[HttpUrl] = None
+    interval: int = 900
 
     @classmethod
     def from_file(cls, file: Path) -> "Config":
