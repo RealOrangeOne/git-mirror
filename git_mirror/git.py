@@ -6,7 +6,9 @@ from .config import Config, Repository
 
 
 def git(command: List[str], cwd: Path) -> str:
-    return subprocess.check_output(["git"] + command, cwd=cwd).decode()
+    return subprocess.check_output(
+        ["git"] + command, cwd=cwd, stderr=subprocess.DEVNULL
+    ).decode()
 
 
 def get_repo(config: Config, repository: Repository):
