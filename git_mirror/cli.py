@@ -60,7 +60,7 @@ def main():
 
     args = get_args()
 
-    config = Config.from_file(Path() / "repositories.toml")
+    config = Config.from_file(Path.cwd() / "repositories.toml")
     config.clone_root.mkdir(exist_ok=True)
 
     prune_repositories(config)
