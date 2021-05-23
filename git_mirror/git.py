@@ -24,7 +24,7 @@ def get_repo(config: Config, repository: Repository):
                 repository.expanded_source,
                 str(directory),
             ],
-            cwd=Path(),
+            cwd=config.clone_root,
         )
 
 
@@ -49,7 +49,7 @@ def mirror_repository(repository: Repository, config: Config):
 
 def repository_exists(url: str) -> bool:
     try:
-        git(["ls-remote", "--heads", "--quiet", url], cwd=Path())
+        git(["ls-remote", "--heads", "--quiet", url], cwd=Path.cwd())
         return True
     except subprocess.CalledProcessError:
         return False
